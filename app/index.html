@@ -1,0 +1,99 @@
+<html>
+<head>
+	<title>Labour Day - Jenkins Job Reporter</title>
+	<link rel="stylesheet" href="/css/vendor/bootstrap.min.css" />
+	<link rel="stylesheet" href="/css/main.css" />
+	<link rel="stylesheet" href="/css/vendor/nv.d3.css" />
+	<script type="text/javascript" src="/js/vendor/jquery-2.0.2.min.js"></script>
+	<script type="text/javascript" src="/js/vendor/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/js/vendor/d3.v2.min.js"></script>
+	<script type="text/javascript" src="/js/vendor/nv.d3.js"></script>
+	<script type="text/javascript" src="/js/vendor/angular.js"></script>
+	<script type="text/javascript" src="/js/vendor/angularjs-nvd3-directives.js"></script>
+	<script type="text/javascript" src="/js/app.js"></script>
+	<script type="text/javascript" src="/js/controller.js"></script>
+</head>
+<body ng-init="error=false" ng-app="labourDay">
+	<div class="masthead text-center">
+		<h2>Functional Tests</h3>
+	</div>
+	<div ng-controller="Timeline">
+		<div id="timeline" class="section">
+			<div>
+				<div class="timeline">
+					<nvd3-multi-bar-chart
+						data="timelineData"
+						id="timelineBars"
+						margin="{left: 25, top: 0, bottom: 35, right: 0}"
+						stacked="true"
+						showLegend="true"
+						showXAxis="true"
+						showYAxis="true"
+						reduceXTicks="false"
+						showValues="true"
+						color="['#3bc93b', '#de0000']"
+						yAxisTickFormat="yAxisTickFormatFunction()"
+						delay="750">
+							<svg></svg>
+					</nvd3-multi-bar-chart>
+				</div>
+			</div>
+		</div>
+
+		<hr class="separator">
+
+		<div id="by_platform" class="section">
+			<h5 class="masthead text-center" ng-if="byPlatform">Build "{{build}}" - By Platform</h5>
+			<div
+				class="chart text-center"
+				ng-repeat="(platform, data) in byPlatform"
+				style="margin-left: {{offset + $index * plaformWidth}}; width: {{plaformWidth}}"
+			>
+				<nvd3-pie-chart
+					data="data"
+					id="byPlatform{{$index}}"
+					margin="{left: 0, top: 0, bottom: 0, right: 0}"
+					color="['#3bc93b', '#de0000']"
+					x="xFunction()"
+					y="yFunction()"
+					donut="true"
+					donutRatio=".25"
+					labelType="percent"
+					showLabels="true">
+						<svg></svg>
+				</nvd3-pie-chart>
+				<p class="masthead text-center">{{platform}}</p>
+			</div>
+		</div>
+
+		<hr class="separator">
+
+		<div id="by_priority" class="section" ng-if="byPriority">
+			<h5 class="masthead text-center">Build "{{build}}" - By Priority</h5>
+			<div
+				class="chart text-center"
+				ng-repeat="(priority, data) in byPriority"
+				style="margin-left: {{offset + $index * priorityWidth}}; width: {{priorityWidth}}"
+			>
+				<nvd3-pie-chart
+					data="data"
+					id="byPriority{{$index}}"
+					margin="{left: 0, top: 0, bottom: 0, right: 0}"
+					color="['#3bc93b', '#de0000']"
+					x="xFunction()"
+					y="yFunction()"
+					donut="true"
+					donutRatio=".25"
+					labelType="percent"
+					showLabels="true"
+					pieLabelsOutside="false">
+						<svg></svg>
+				</nvd3-pie-chart>
+				<p class="masthead text-center">{{priority}}</p>
+			</div>
+		</div>
+
+		<hr class="separator">
+	</div>
+</body>
+</html>

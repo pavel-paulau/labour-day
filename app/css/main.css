@@ -1,0 +1,19 @@
+.section {
+    height: 190px;
+}
+
+.separator {
+    margin: 0 2.5%;
+}
+
+.chart {
+    height: 140px;
+    position: absolute;
+}
+
+.timeline {
+    height: 200px;
+    width: 95%;
+    margin-left: 2.5%;
+}
+
