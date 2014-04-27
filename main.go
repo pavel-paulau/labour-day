@@ -36,10 +36,6 @@ func byPriority(ctx *web.Context) []byte {
 	return data_source.GetBreakdown(build, false)
 }
 
-func getLatest() []byte {
-	return []byte("3.0.0-605")
-}
-
 type Config struct {
 	CouchbaseAddress, ListenAddress string
 }
@@ -63,7 +59,6 @@ func main() {
 	web.Get("/", index)
 	web.Get("/abs_timeline", getTimeline)
 	web.Get("/rel_timeline", getRelTimeline)
-	web.Get("/latest", getLatest)
 	web.Get("/by_priority", byPriority)
 	web.Get("/by_platform", byPlatform)
 

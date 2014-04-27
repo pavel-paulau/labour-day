@@ -10,6 +10,8 @@ function Timeline($scope, $http) {
 
 	$http.get('/rel_timeline').success(function(data) {
 		$scope.timelineRelData = data;
+		var latest_build = data[0]["values"][data[0]["values"].length - 1][0]
+		updateBreakDown(latest_build);
 	});
 
 	$http.get('/abs_timeline').success(function(data) {
@@ -57,8 +59,4 @@ function Timeline($scope, $http) {
 			});
 		});
 	};
-
-	$http.get('/latest').success(function(build) {
-		updateBreakDown(build);
-	});
 }
