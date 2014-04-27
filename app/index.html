@@ -18,19 +18,21 @@
 		<h2>Functional Tests</h3>
 	</div>
 	<div ng-controller="Timeline">
+		<hr class="separator">
+
 		<div id="timeline" class="section">
 			<div>
 				<div class="timeline">
 					<nvd3-multi-bar-chart
-						data="timelineData"
+						data="timelineRelData"
 						id="timelineBars"
 						margin="{left: 25, top: 0, bottom: 35, right: 0}"
 						stacked="true"
 						showLegend="true"
 						showXAxis="true"
 						showYAxis="true"
-						reduceXTicks="false"
-						showValues="true"
+						reduceXTicks="true"
+						tooltips="true"
 						color="['#3bc93b', '#de0000']"
 						yAxisTickFormat="yAxisTickFormatFunction()"
 						delay="750">
@@ -42,7 +44,31 @@
 
 		<hr class="separator">
 
-		<div id="by_platform" class="section">
+		<div id="timeline" class="section">
+			<div>
+				<div class="timeline">
+					<nvd3-multi-bar-chart
+						data="timelineData"
+						id="timelineBarsRelative"
+						margin="{left: 25, top: 0, bottom: 35, right: 0}"
+						stacked="true"
+						showLegend="true"
+						showXAxis="true"
+						showYAxis="true"
+						reduceXTicks="true"
+						tooltips="true"
+						color="['#3bc93b', '#de0000']"
+						yAxisTickFormat="yAxisTickFormatFunction()"
+						delay="750">
+							<svg></svg>
+					</nvd3-multi-bar-chart>
+				</div>
+			</div>
+		</div>
+
+		<hr class="separator">
+
+		<div id="by_platform" class="sub-section">
 			<h5 class="masthead text-center" ng-if="byPlatform">Build "{{build}}" - By Platform</h5>
 			<div
 				class="chart text-center"
@@ -66,9 +92,7 @@
 			</div>
 		</div>
 
-		<hr class="separator">
-
-		<div id="by_priority" class="section" ng-if="byPriority">
+		<div id="by_priority" class="sub-section" style="margin-left: 50%" ng-if="byPriority">
 			<h5 class="masthead text-center">Build "{{build}}" - By Priority</h5>
 			<div
 				class="chart text-center"
@@ -92,8 +116,6 @@
 				<p class="masthead text-center">{{priority}}</p>
 			</div>
 		</div>
-
-		<hr class="separator">
 	</div>
 </body>
 </html>

@@ -12,7 +12,11 @@ function Timeline($scope, $http) {
 		$scope.timelineData = data;
 	});
 
-	var format = d3.format('d');
+	$http.get('/rel_timeline').success(function(data) {
+		$scope.timelineRelData = data;
+	});
+
+	var format = d3.format('f');
 	$scope.yAxisTickFormatFunction = function(){
 		return function(d) {
 			return format(Math.abs(d));
@@ -41,13 +45,13 @@ function Timeline($scope, $http) {
 		.success(function(data) {
 			$scope.byPlatform = data;
 			$scope.numPlatforms = Object.keys($scope.byPlatform).length;
-			$scope.plaformWidth = screen.width * 0.95 / $scope.numPlatforms;
+			$scope.plaformWidth = 0.5 * screen.width * 0.95 / $scope.numPlatforms;
 
 			$http({method: 'GET', url: '/priority', params: {"build": build}})
 			.success(function(data) {
 				$scope.byPriority = data;
 				$scope.numPriorities = Object.keys($scope.byPriority).length;
-				$scope.priorityWidth = screen.width * 0.95 / $scope.numPriorities;
+				$scope.priorityWidth = 0.5 * screen.width * 0.95 / $scope.numPriorities;
 
 				$scope.$apply();
 			});

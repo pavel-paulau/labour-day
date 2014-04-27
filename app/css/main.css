@@ -6,6 +6,12 @@
     margin: 0 2.5%;
 }
 
+.sub-section {
+    height: 190px;
+    width: 50%;
+    position: absolute;
+}
+
 .chart {
     height: 140px;
     position: absolute;
