@@ -8,12 +8,12 @@
 function Timeline($scope, $http) {
 	"use strict";
 
-	$http.get('/timeline').success(function(data) {
-		$scope.timelineData = data;
-	});
-
 	$http.get('/rel_timeline').success(function(data) {
 		$scope.timelineRelData = data;
+	});
+
+	$http.get('/abs_timeline').success(function(data) {
+		$scope.timelineAbsData = data;
 	});
 
 	var format = d3.format('f');
@@ -41,13 +41,13 @@ function Timeline($scope, $http) {
 	var updateBreakDown = function(build) {
 		$scope.build = build;
 
-		$http({method: 'GET', url: '/platform', params: {"build": build}})
+		$http({method: 'GET', url: '/by_platform', params: {"build": build}})
 		.success(function(data) {
 			$scope.byPlatform = data;
 			$scope.numPlatforms = Object.keys($scope.byPlatform).length;
 			$scope.plaformWidth = 0.5 * screen.width * 0.95 / $scope.numPlatforms;
 
-			$http({method: 'GET', url: '/priority', params: {"build": build}})
+			$http({method: 'GET', url: '/by_priority', params: {"build": build}})
 			.success(function(data) {
 				$scope.byPriority = data;
 				$scope.numPriorities = Object.keys($scope.byPriority).length;
