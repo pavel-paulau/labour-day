@@ -28,7 +28,7 @@ func (ds *DataSource) GetBucket(bucket string) *couchbase.Bucket {
 	uri := fmt.Sprintf("http://%s:%s@%s/", bucket, "", ds.CouchbaseAddress)
 
 	client, _ := couchbase.Connect(uri)
-	pool, _ := client.GetPool("jenkins")
+	pool, _ := client.GetPool("default")
 
 	b, err := pool.GetBucket(bucket)
 	if err != nil {
