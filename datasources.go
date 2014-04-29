@@ -11,7 +11,7 @@ import (
 )
 
 var ddocs = map[string]string{
-	"default": `{
+	"jenkins": `{
 		"views": {
 			"by_build": {
 				"map": "function (doc, meta) {emit([doc.build, doc.priority, doc.os], [doc.failCount, doc.totalCount]);}"
@@ -28,7 +28,7 @@ func (ds *DataSource) GetBucket(bucket string) *couchbase.Bucket {
 	uri := fmt.Sprintf("http://%s:%s@%s/", bucket, "", ds.CouchbaseAddress)
 
 	client, _ := couchbase.Connect(uri)
-	pool, _ := client.GetPool("default")
+	pool, _ := client.GetPool("jenkins")
 
 	b, err := pool.GetBucket(bucket)
 	if err != nil {
@@ -56,8 +56,8 @@ func (ds *DataSource) installDDoc(ddoc string) {
 }
 
 func (ds *DataSource) GetTimeline(abs bool) []byte {
-	b := ds.GetBucket("default")
-	rows := ds.QueryView(b, "default", "by_build", map[string]interface{}{})
+	b := ds.GetBucket("jenkins")
+	rows := ds.QueryView(b, "jenkins", "by_build", map[string]interface{}{})
 
 	failed := map[string]float64{}
 	total := map[string]float64{}
@@ -124,9 +124,9 @@ func appendIfUnique(slice []string, s string) []string {
 }
 
 func (ds *DataSource) GetBreakdown(build string, by_platform bool) []byte {
-	b := ds.GetBucket("default")
+	b := ds.GetBucket("jenkins")
 	params := map[string]interface{}{"startkey": []string{build}}
-	rows := ds.QueryView(b, "default", "by_build", params)
+	rows := ds.QueryView(b, "jenkins", "by_build", params)
 
 	keys := []string{}
 	failed := map[string]float64{}
