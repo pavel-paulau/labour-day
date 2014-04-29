@@ -1,4 +1,4 @@
 {
 	"CouchbaseAddress": "172.23.107.41:8091",
-	"ListenAddress": "127.0.0.1:8000"
+	"ListenAddress": "127.0.0.1:8181"
 }
