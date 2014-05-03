@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -25,9 +24,7 @@ type DataSource struct {
 }
 
 func (ds *DataSource) GetBucket(bucket string) *couchbase.Bucket {
-	uri := fmt.Sprintf("http://%s:%s@%s/", bucket, "", ds.CouchbaseAddress)
-
-	client, _ := couchbase.Connect(uri)
+	client, _ := couchbase.Connect(ds.CouchbaseAddress)
 	pool, _ := client.GetPool("default")
 
 	b, err := pool.GetBucket(bucket)
