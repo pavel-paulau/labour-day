@@ -76,6 +76,7 @@ func (ds *DataSource) GetTimeline(abs bool) []byte {
 		builds = append(builds, build)
 	}
 
+	timeline := []map[string]interface{}{}
 	passedValues := []interface{}{}
 	failedValues := []interface{}{}
 	sort.Strings(builds)
@@ -90,6 +91,10 @@ func (ds *DataSource) GetTimeline(abs bool) []byte {
 				-failed[build],
 			})
 		}
+		timeline = append(timeline,
+			map[string]interface{}{"key": "Passed", "values": passedValues})
+		timeline = append(timeline,
+			map[string]interface{}{"key": "Failed", "values": failedValues})
 	} else {
 		for _, build := range builds {
 			passedValues = append(passedValues, []interface{}{
@@ -101,12 +106,12 @@ func (ds *DataSource) GetTimeline(abs bool) []byte {
 				100.0 * failed[build] / total[build],
 			})
 		}
+		timeline = append(timeline,
+			map[string]interface{}{"key": "Passed, %", "values": passedValues})
+		timeline = append(timeline,
+			map[string]interface{}{"key": "Failed, %", "values": failedValues})
 	}
 
-	timeline := []map[string]interface{}{
-		map[string]interface{}{"key": "Passed", "values": passedValues},
-		map[string]interface{}{"key": "Failed", "values": failedValues},
-	}
 	j, _ := json.Marshal(timeline)
 	return j
 }
