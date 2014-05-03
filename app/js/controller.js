@@ -10,13 +10,39 @@ function Timeline($scope, $http) {
 
 	$http.get('/rel_timeline').success(function(data) {
 		$scope.timelineRelData = data;
-		var latest_build = data[0]["values"][data[0]["values"].length - 1][0]
+		var latest_build = data[0]["values"][data[0]["values"].length - 1][0];
 		updateBreakDown(latest_build);
 	});
 
 	$http.get('/abs_timeline').success(function(data) {
 		$scope.timelineAbsData = data;
 	});
+
+	$scope.relToolTipContentFunction = function() {
+		return function(key, build, num, e, graph) {
+			return '<h4>' + num + '% Tests ' + key.replace(', %', '') + '</h4>' +
+				'<p>Build ' + build + '</p>';
+		};
+	};
+
+	$scope.absToolTipContentFunction = function() {
+		return function(key, build, num, e, graph) {
+			var failed = $scope.timelineAbsData[1].values;
+			var passed = $scope.timelineAbsData[0].values;
+			for (var i = 0; i < failed.length; i++) {
+				if (passed[i][0] == build) {
+					var total;
+					if (key === 'Passed') {
+						total = -1 * failed[i][1] + parseInt(num, 10);	
+					} else {
+						total = passed[i][1] + parseInt(num, 10);	
+					}					
+					return '<h4>' + num + ' of ' + total + ' Tests ' + key + '</h4>' +
+						'<p>Build ' + build + '</p>';
+				}
+			}
+		};
+	};
 
 	var format = d3.format('f');
 	$scope.yAxisTickFormatFunction = function(){

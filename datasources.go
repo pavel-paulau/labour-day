@@ -73,7 +73,7 @@ func (ds *DataSource) GetTimeline(abs bool) []byte {
 		} else {
 			total[build] = totalCount
 		}
-		builds = append(builds, build)
+		builds = appendIfUnique(builds, build)
 	}
 
 	timeline := []map[string]interface{}{}
