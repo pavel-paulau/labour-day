@@ -1,2 +1,1 @@
-labour-day
-==========
+![](docs/dashboard.jpeg)
