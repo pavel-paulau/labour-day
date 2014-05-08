@@ -61,8 +61,14 @@ func (ds *DataSource) GetTimeline(abs bool) []byte {
 	builds := []string{}
 	for i := range rows {
 		build := rows[i].Key.([]interface{})[0].(string)
-		failCount := rows[i].Value.([]interface{})[0].(float64)
-		totalCount := rows[i].Value.([]interface{})[1].(float64)
+		failCount, ok := rows[i].Value.([]interface{})[0].(float64)
+		if !ok {
+			continue
+		}
+		totalCount, ok := rows[i].Value.([]interface{})[1].(float64)
+		if !ok {
+			continue
+		}
 		if _, ok := failed[build]; ok {
 			failed[build] += failCount
 		} else {
@@ -144,8 +150,14 @@ func (ds *DataSource) GetBreakdown(build string, by_platform bool) []byte {
 			continue
 		}
 
-		failCount := rows[i].Value.([]interface{})[0].(float64)
-		totalCount := rows[i].Value.([]interface{})[1].(float64)
+		failCount, ok := rows[i].Value.([]interface{})[0].(float64)
+		if !ok {
+			continue
+		}
+		totalCount, ok := rows[i].Value.([]interface{})[1].(float64)
+		if !ok {
+			continue
+		}
 		if _, ok := failed[key]; ok {
 			failed[key] += failCount
 		} else {
