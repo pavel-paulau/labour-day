@@ -12,8 +12,8 @@ import (
 var ddocs = map[string]string{
 	"jenkins": `{
 		"views": {
-			"by_build": {
-				"map": "function (doc, meta) {emit([doc.build, doc.priority, doc.os], [doc.failCount, doc.totalCount]);}"
+			"data_by_build": {
+				"map": "function (doc, meta) {emit(doc.build, [doc.failCount, doc.totalCount, doc.os, doc.priority]);}"
 			}
 		}
 	}`,
@@ -54,18 +54,18 @@ func (ds *DataSource) installDDoc(ddoc string) {
 
 func (ds *DataSource) GetTimeline(abs bool) []byte {
 	b := ds.GetBucket("jenkins")
-	rows := ds.QueryView(b, "jenkins", "by_build", map[string]interface{}{})
+	rows := ds.QueryView(b, "jenkins", "data_by_build", map[string]interface{}{})
 
 	failed := map[string]float64{}
 	total := map[string]float64{}
 	builds := []string{}
-	for i := range rows {
-		build := rows[i].Key.([]interface{})[0].(string)
-		failCount, ok := rows[i].Value.([]interface{})[0].(float64)
+	for _, row := range rows {
+		build := row.Key.(string)
+		failCount, ok := row.Value.([]interface{})[0].(float64)
 		if !ok {
 			continue
 		}
-		totalCount, ok := rows[i].Value.([]interface{})[1].(float64)
+		totalCount, ok := row.Value.([]interface{})[1].(float64)
 		if !ok {
 			continue
 		}
@@ -133,28 +133,28 @@ func appendIfUnique(slice []string, s string) []string {
 
 func (ds *DataSource) GetBreakdown(build string, by_platform bool) []byte {
 	b := ds.GetBucket("jenkins")
-	params := map[string]interface{}{"startkey": []string{build}}
-	rows := ds.QueryView(b, "jenkins", "by_build", params)
+	params := map[string]interface{}{"key": build}
+	rows := ds.QueryView(b, "jenkins", "data_by_build", params)
 
 	keys := []string{}
 	failed := map[string]float64{}
 	total := map[string]float64{}
-	for i := range rows {
+	for _, row := range rows {
 		var key string
 		if by_platform {
-			key = rows[i].Key.([]interface{})[2].(string)
+			key = row.Value.([]interface{})[2].(string)
 		} else {
-			key = rows[i].Key.([]interface{})[1].(string)
+			key = row.Value.([]interface{})[3].(string)
 		}
 		if key == "N/A" {
 			continue
 		}
 
-		failCount, ok := rows[i].Value.([]interface{})[0].(float64)
+		failCount, ok := row.Value.([]interface{})[0].(float64)
 		if !ok {
 			continue
 		}
-		totalCount, ok := rows[i].Value.([]interface{})[1].(float64)
+		totalCount, ok := row.Value.([]interface{})[1].(float64)
 		if !ok {
 			continue
 		}
