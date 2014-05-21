@@ -70,54 +70,89 @@
 
 		<hr class="separator">
 
-		<div id="by_platform" class="sub-section">
-			<h5 class="masthead text-center" ng-if="byPlatform">Build "{{build}}" - By Platform</h5>
-			<div
-				class="chart text-center"
-				ng-repeat="(platform, data) in byPlatform"
-				style="margin-left: {{offset + $index * plaformWidth}}; width: {{plaformWidth}}"
-			>
-				<nvd3-pie-chart
-					data="data"
-					id="byPlatform{{$index}}"
-					margin="{left: 0, top: 0, bottom: 0, right: 0}"
-					color="['#3bc93b', '#de0000']"
-					x="xFunction()"
-					y="yFunction()"
-					donut="true"
-					donutRatio=".25"
-					labelType="percent"
-					showLabels="true">
-						<svg></svg>
-				</nvd3-pie-chart>
-				<p class="masthead text-center">{{platform}}</p>
+		<div class="breakdowns">
+
+			<div id="by_category" class="sub-section" ng-if="byPriority">
+				<h5 class="masthead text-center">Build "{{build}}" - By Category</h5>
+				<div
+					class="chart text-center"
+					ng-repeat="(category, data) in byCategory"
+					style="margin-left: {{$index * categoryWidth}}; width: {{categoryWidth}}"
+				>
+					<nvd3-pie-chart
+						data="data"
+						id="byCategory{{$index}}"
+						margin="{left: 0, top: 0, bottom: 0, right: 0}"
+						color="['#3bc93b', '#de0000']"
+						x="xFunction()"
+						y="yFunction()"
+						donut="true"
+						donutRatio=".25"
+						tooltips="true"
+						tooltipcontent="breakdownToolTipContentFunction()"
+						labelType="percent"
+						showLabels="true"
+						pieLabelsOutside="false">
+							<svg></svg>
+					</nvd3-pie-chart>
+					<p class="masthead text-center">{{category}}</p>
+				</div>
+			</div>
+
+			<div id="by_platform" class="sub-section" style="margin-left: 31.6%" ng-if="byPlatform">
+				<h5 class="masthead text-center">Build "{{build}}" - By Platform</h5>
+				<div
+					class="chart text-center"
+					ng-repeat="(platform, data) in byPlatform"
+					style="margin-left: {{$index * plaformWidth}}; width: {{plaformWidth}}"
+				>
+					<nvd3-pie-chart
+						data="data"
+						id="byPlatform{{$index}}"
+						margin="{left: 0, top: 0, bottom: 0, right: 0}"
+						color="['#3bc93b', '#de0000']"
+						x="xFunction()"
+						y="yFunction()"
+						donut="true"
+						donutRatio=".25"
+						tooltips="true"
+						tooltipcontent="breakdownToolTipContentFunction()"
+						labelType="percent"
+						showLabels="true">
+							<svg></svg>
+					</nvd3-pie-chart>
+					<p class="masthead text-center">{{platform}}</p>
+				</div>
+			</div>
+
+			<div id="by_priority" class="sub-section" style="margin-left: 63.3%" ng-if="byPriority">
+				<h5 class="masthead text-center">Build "{{build}}" - By Priority</h5>
+				<div
+					class="chart text-center"
+					ng-repeat="(priority, data) in byPriority"
+					style="margin-left: {{$index * priorityWidth}}; width: {{priorityWidth}}"
+				>
+					<nvd3-pie-chart
+						data="data"
+						id="byPriority{{$index}}"
+						margin="{left: 0, top: 0, bottom: 0, right: 0}"
+						color="['#3bc93b', '#de0000']"
+						x="xFunction()"
+						y="yFunction()"
+						donut="true"
+						donutRatio=".25"
+						tooltips="true"
+						tooltipcontent="breakdownToolTipContentFunction()"
+						labelType="percent"
+						showLabels="true"
+						pieLabelsOutside="false">
+							<svg></svg>
+					</nvd3-pie-chart>
+					<p class="masthead text-center">{{priority}}</p>
+				</div>
 			</div>
 		</div>
 
-		<div id="by_priority" class="sub-section" style="margin-left: 50%" ng-if="byPriority">
-			<h5 class="masthead text-center">Build "{{build}}" - By Priority</h5>
-			<div
-				class="chart text-center"
-				ng-repeat="(priority, data) in byPriority"
-				style="margin-left: {{offset + $index * priorityWidth}}; width: {{priorityWidth}}"
-			>
-				<nvd3-pie-chart
-					data="data"
-					id="byPriority{{$index}}"
-					margin="{left: 0, top: 0, bottom: 0, right: 0}"
-					color="['#3bc93b', '#de0000']"
-					x="xFunction()"
-					y="yFunction()"
-					donut="true"
-					donutRatio=".25"
-					labelType="percent"
-					showLabels="true"
-					pieLabelsOutside="false">
-						<svg></svg>
-				</nvd3-pie-chart>
-				<p class="masthead text-center">{{priority}}</p>
-			</div>
-		</div>
 	</div>
 </body>
 </html>

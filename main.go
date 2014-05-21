@@ -26,14 +26,19 @@ func getRelTimeline() []byte {
 	return data_source.GetTimeline(false)
 }
 
+func byCategory(ctx *web.Context) []byte {
+	build := ctx.Params["build"]
+	return data_source.GetBreakdown(build, "by_category")
+}
+
 func byPlatform(ctx *web.Context) []byte {
 	build := ctx.Params["build"]
-	return data_source.GetBreakdown(build, true)
+	return data_source.GetBreakdown(build, "by_platform")
 }
 
 func byPriority(ctx *web.Context) []byte {
 	build := ctx.Params["build"]
-	return data_source.GetBreakdown(build, false)
+	return data_source.GetBreakdown(build, "by_priority")
 }
 
 type Config struct {
@@ -59,6 +64,7 @@ func main() {
 	web.Get("/", index)
 	web.Get("/abs_timeline", getTimeline)
 	web.Get("/rel_timeline", getRelTimeline)
+	web.Get("/by_category", byCategory)
 	web.Get("/by_priority", byPriority)
 	web.Get("/by_platform", byPlatform)
 

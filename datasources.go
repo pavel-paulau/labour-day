@@ -13,7 +13,7 @@ var ddocs = map[string]string{
 	"jenkins": `{
 		"views": {
 			"data_by_build": {
-				"map": "function (doc, meta) {emit(doc.build, [doc.failCount, doc.totalCount, doc.os, doc.priority]);}"
+				"map": "function (doc, meta) {emit(doc.build, [doc.failCount, doc.totalCount, doc.os, doc.priority, doc.component]);}"
 			}
 		}
 	}`,
@@ -131,21 +131,24 @@ func appendIfUnique(slice []string, s string) []string {
 	return append(slice, s)
 }
 
-func (ds *DataSource) GetBreakdown(build string, by_platform bool) []byte {
+var BREAKDOWN_ID = map[string]int{
+	"by_platform": 2,
+	"by_priority": 3,
+	"by_category": 4,
+}
+
+func (ds *DataSource) GetBreakdown(build string, breakdown string) []byte {
 	b := ds.GetBucket("jenkins")
 	params := map[string]interface{}{"key": build}
 	rows := ds.QueryView(b, "jenkins", "data_by_build", params)
+	breakdown_id := BREAKDOWN_ID[breakdown]
 
 	keys := []string{}
 	failed := map[string]float64{}
 	total := map[string]float64{}
 	for _, row := range rows {
 		var key string
-		if by_platform {
-			key = row.Value.([]interface{})[2].(string)
-		} else {
-			key = row.Value.([]interface{})[3].(string)
-		}
+		key = row.Value.([]interface{})[breakdown_id].(string)
 		if key == "N/A" {
 			continue
 		}
@@ -174,7 +177,12 @@ func (ds *DataSource) GetBreakdown(build string, by_platform bool) []byte {
 	sort.Strings(keys)
 	data := map[string]interface{}{}
 	for _, key := range keys {
-		title := strings.Title(strings.ToLower(key))
+		var title string
+		if breakdown == "by_category" {
+			title = key
+		} else {
+			title = strings.Title(strings.ToLower(key))
+		}
 		data[title] = []map[string]interface{}{
 			{"key": "Passed", "value": total[key] - failed[key]},
 			{"key": "Failed", "value": failed[key]},

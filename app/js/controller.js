@@ -19,14 +19,14 @@ function Timeline($scope, $http) {
 	});
 
 	$scope.relToolTipContentFunction = function() {
-		return function(key, build, num, e, graph) {
+		return function(key, build, num) {
 			return '<h4>' + num + '% Tests ' + key.replace(', %', '') + '</h4>' +
 				'<p>Build ' + build + '</p>';
 		};
 	};
 
 	$scope.absToolTipContentFunction = function() {
-		return function(key, build, num, e, graph) {
+		return function(key, build, num) {
 			var failed = $scope.timelineAbsData[1].values;
 			var passed = $scope.timelineAbsData[0].values;
 			for (var i = 0; i < failed.length; i++) {
@@ -64,8 +64,6 @@ function Timeline($scope, $http) {
 		return function(d){ return d.value; };
 	};
 
-	$scope.offset = 0.025 * screen.width;
-
 	var updateBreakDown = function(build) {
 		$scope.build = build;
 
@@ -73,16 +71,31 @@ function Timeline($scope, $http) {
 		.success(function(data) {
 			$scope.byPlatform = data;
 			$scope.numPlatforms = Object.keys($scope.byPlatform).length;
-			$scope.plaformWidth = 0.5 * screen.width * 0.95 / $scope.numPlatforms;
+			$scope.plaformWidth = screen.width * 0.95 / 3 /$scope.numPlatforms;
 
 			$http({method: 'GET', url: '/by_priority', params: {"build": build}})
 			.success(function(data) {
 				$scope.byPriority = data;
 				$scope.numPriorities = Object.keys($scope.byPriority).length;
-				$scope.priorityWidth = 0.5 * screen.width * 0.95 / $scope.numPriorities;
+				$scope.priorityWidth = screen.width * 0.95 / 3 / $scope.numPriorities;
 
-				$scope.$apply();
+				$http({method: 'GET', url: '/by_category', params: {"build": build}})
+				.success(function(data) {
+					$scope.byCategory = data;
+					$scope.numCategories = Object.keys($scope.byCategory).length;
+					$scope.categoryWidth = screen.width * 0.95 / 3 / $scope.numCategories;
+
+					$scope.$apply();
+				});
+
 			});
 		});
+	};
+
+	$scope.breakdownToolTipContentFunction = function() {
+		return function(status, num) {
+			return '<h4>' + parseInt(num, 10) + ' Tests ' + status + '</h4>' +
+				'<p>Build ' + $scope.build + '</p>';
+		};
 	};
 }
