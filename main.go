@@ -42,7 +42,7 @@ func byPriority(ctx *web.Context) []byte {
 }
 
 type Config struct {
-	CouchbaseAddress, ListenAddress string
+	CouchbaseAddress, ListenAddress, Release string
 }
 
 func main() {
@@ -60,7 +60,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	data_source = DataSource{config.CouchbaseAddress}
+	data_source = DataSource{config.CouchbaseAddress, config.Release}
 	web.Get("/", index)
 	web.Get("/abs_timeline", getTimeline)
 	web.Get("/rel_timeline", getRelTimeline)

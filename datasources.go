@@ -21,6 +21,7 @@ var ddocs = map[string]string{
 
 type DataSource struct {
 	CouchbaseAddress string
+	Release          string
 }
 
 func (ds *DataSource) GetBucket(bucket string) *couchbase.Bucket {
@@ -54,7 +55,8 @@ func (ds *DataSource) installDDoc(ddoc string) {
 
 func (ds *DataSource) GetTimeline(abs bool) []byte {
 	b := ds.GetBucket("jenkins")
-	rows := ds.QueryView(b, "jenkins", "data_by_build", map[string]interface{}{})
+	params := map[string]interface{}{"startkey": ds.Release}
+	rows := ds.QueryView(b, "jenkins", "data_by_build", params)
 
 	failed := map[string]float64{}
 	total := map[string]float64{}
