@@ -151,9 +151,6 @@ func (ds *DataSource) GetBreakdown(build string, breakdown string) []byte {
 	for _, row := range rows {
 		var key string
 		key = row.Value.([]interface{})[breakdown_id].(string)
-		if key == "N/A" {
-			continue
-		}
 
 		failCount, ok := row.Value.([]interface{})[0].(float64)
 		if !ok {
