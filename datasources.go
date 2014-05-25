@@ -53,6 +53,8 @@ func (ds *DataSource) installDDoc(ddoc string) {
 	}
 }
 
+var TIMELINE_SIZE = 30
+
 func (ds *DataSource) GetTimeline(abs bool) []byte {
 	b := ds.GetBucket("jenkins")
 	params := map[string]interface{}{"startkey": ds.Release}
@@ -87,9 +89,10 @@ func (ds *DataSource) GetTimeline(abs bool) []byte {
 	timeline := []map[string]interface{}{}
 	passedValues := []interface{}{}
 	failedValues := []interface{}{}
+	skip := len(builds) - TIMELINE_SIZE
 	sort.Strings(builds)
 	if abs {
-		for _, build := range builds {
+		for _, build := range builds[skip:] {
 			passedValues = append(passedValues, []interface{}{
 				build,
 				total[build] - failed[build],
@@ -104,7 +107,7 @@ func (ds *DataSource) GetTimeline(abs bool) []byte {
 		timeline = append(timeline,
 			map[string]interface{}{"key": "Failed", "values": failedValues})
 	} else {
-		for _, build := range builds {
+		for _, build := range builds[skip:] {
 			passedValues = append(passedValues, []interface{}{
 				build,
 				100.0 * (total[build] - failed[build]) / total[build],
