@@ -9,12 +9,12 @@ import (
 	"github.com/hoisie/web"
 )
 
-var pckg_dir string
+var pckgDir string
 
 var data_source DataSource
 
 func index() []byte {
-	content, _ := ioutil.ReadFile(pckg_dir + "app/index.html")
+	content, _ := ioutil.ReadFile(pckgDir + "app/index.html")
 	return content
 }
 
@@ -23,16 +23,16 @@ type Config struct {
 }
 
 func main() {
-	pckg_dir = os.Getenv("GOPATH") + "/src/github.com/pavel-paulau/labour-day/"
-	web.Config.StaticDir = pckg_dir + "app"
+	pckgDir = os.Getenv("GOPATH") + "/src/github.com/pavel-paulau/labour-day/"
+	web.Config.StaticDir = pckgDir + "app"
 
-	config_file, err := ioutil.ReadFile(pckg_dir + "config.json")
+	configFile, err := ioutil.ReadFile(pckgDir + "config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var config Config
-	err = json.Unmarshal(config_file, &config)
+	err = json.Unmarshal(configFile, &config)
 	if err != nil {
 		log.Fatal(err)
 	}
