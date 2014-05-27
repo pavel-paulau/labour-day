@@ -55,11 +55,11 @@ func (ds *DataSource) installDDoc(ddoc string) {
 var TIMELINE_SIZE = 40
 
 var VIEW = map[string]int{
-	"fail_count":  0,
-	"total_count": 1,
-	"by_platform": 2,
-	"by_priority": 3,
-	"by_category": 4,
+	"failCount":  0,
+	"totalCount": 1,
+	"Platform":   2,
+	"Priority":   3,
+	"Category":   4,
 }
 
 type MapBuild struct {
@@ -118,17 +118,19 @@ func (ds *DataSource) GetTimeline() []byte {
 	mapBuilds := map[string][]MapBuild{}
 	for _, row := range rows {
 		version := row.Key.(string)
-		failed, ok := row.Value.([]interface{})[VIEW["fail_count"]].(float64)
+
+		value := row.Value.([]interface{})
+		failed, ok := value[VIEW["failCount"]].(float64)
 		if !ok {
 			continue
 		}
-		total, ok := row.Value.([]interface{})[VIEW["total_count"]].(float64)
+		total, ok := value[VIEW["totalCount"]].(float64)
 		if !ok {
 			continue
 		}
-		category := row.Value.([]interface{})[VIEW["by_category"]].(string)
-		platform := row.Value.([]interface{})[VIEW["by_platform"]].(string)
-		priority := row.Value.([]interface{})[VIEW["by_priority"]].(string)
+		category := value[VIEW["Category"]].(string)
+		platform := value[VIEW["Platform"]].(string)
+		priority := value[VIEW["Priority"]].(string)
 
 		mapBuilds[version] = append(mapBuilds[version], MapBuild{
 			total - failed,
@@ -147,50 +149,50 @@ func (ds *DataSource) GetTimeline() []byte {
 	sort.Strings(versions)
 
 	fullSet := map[string]FullSet{}
-
 	allCategories := []string{}
+	reduceBuilds := []ReduceBuild{}
 
 	skip := len(versions) - TIMELINE_SIZE
-	reduceBuilds := []ReduceBuild{}
 	for _, version := range versions[skip:] {
+		currCategories := []string{}
+
 		reduce := ReduceBuild{}
 		reduce.Version = version
 		reduce.ByCategory = map[string]Breakdown{}
 		reduce.ByPlatform = map[string]Breakdown{}
 		reduce.ByPriority = map[string]Breakdown{}
-		currCategories := []string{}
+
 		for _, build := range mapBuilds[version] {
 			// Totals
 			reduce.AbsPassed += build.Passed
 			reduce.AbsFailed -= build.Failed
 
 			// By Category
+			passed := build.Passed
+			failed := build.Failed
 			if _, ok := reduce.ByCategory[build.Category]; ok {
-				passed := reduce.ByCategory[build.Category].Passed + build.Passed
-				failed := reduce.ByCategory[build.Category].Failed + build.Failed
-				reduce.ByCategory[build.Category] = Breakdown{passed, failed}
-			} else {
-				reduce.ByCategory[build.Category] = Breakdown{build.Passed, build.Failed}
+				passed += reduce.ByCategory[build.Category].Passed
+				failed += reduce.ByCategory[build.Category].Failed
 			}
-			allCategories = appendIfUnique(allCategories, build.Category)
+			reduce.ByCategory[build.Category] = Breakdown{passed, failed}
 
 			// By Platform
+			passed = build.Passed
+			failed = build.Failed
 			if _, ok := reduce.ByPlatform[build.Platform]; ok {
-				passed := reduce.ByPlatform[build.Platform].Passed + build.Passed
-				failed := reduce.ByPlatform[build.Platform].Failed + build.Failed
-				reduce.ByPlatform[build.Platform] = Breakdown{passed, failed}
-			} else {
-				reduce.ByPlatform[build.Platform] = Breakdown{build.Passed, build.Failed}
+				passed += reduce.ByPlatform[build.Platform].Passed
+				failed += reduce.ByPlatform[build.Platform].Failed
 			}
+			reduce.ByPlatform[build.Platform] = Breakdown{passed, failed}
 
 			// By Priority
+			passed = build.Passed
+			failed = build.Failed
 			if _, ok := reduce.ByPriority[build.Priority]; ok {
-				passed := reduce.ByPriority[build.Priority].Passed + build.Passed
-				failed := reduce.ByPriority[build.Priority].Failed + build.Failed
-				reduce.ByPriority[build.Priority] = Breakdown{passed, failed}
-			} else {
-				reduce.ByPriority[build.Priority] = Breakdown{build.Passed, build.Failed}
+				passed += reduce.ByPriority[build.Priority].Passed
+				failed += reduce.ByPriority[build.Priority].Failed
 			}
+			reduce.ByPriority[build.Priority] = Breakdown{passed, failed}
 
 			// Full Set
 			if posInSlice(currCategories, build.Category) == -1 {
@@ -213,7 +215,9 @@ func (ds *DataSource) GetTimeline() []byte {
 				fullSet[build.Category].ByPriority[build.Priority] = Breakdown{passed, failed}
 			}
 
+			// Categories
 			currCategories = appendIfUnique(currCategories, build.Category)
+			allCategories = appendIfUnique(allCategories, build.Category)
 		}
 
 		/***************** BACKFILL *****************/
@@ -222,28 +226,28 @@ func (ds *DataSource) GetTimeline() []byte {
 			totalFailed := float64(0)
 			if _, ok := reduce.ByCategory[category]; !ok {
 				for platform, breakdown := range fullSet[category].ByPlatform {
+					reduce.AbsPassed += breakdown.Passed
+					reduce.AbsFailed += breakdown.Failed
+
+					passed := breakdown.Passed
+					failed := breakdown.Failed
 					if _, ok := reduce.ByPlatform[platform]; ok {
-						passed := reduce.ByPlatform[platform].Passed + breakdown.Passed
-						failed := reduce.ByPlatform[platform].Failed + breakdown.Failed
-						reduce.ByPlatform[platform] = Breakdown{passed, failed}
-					} else {
-						reduce.ByPlatform[platform] = Breakdown{breakdown.Passed, breakdown.Failed}
+						passed += reduce.ByPlatform[platform].Passed
+						failed += reduce.ByPlatform[platform].Failed
+
 					}
-					totalPassed += breakdown.Passed
-					totalFailed += breakdown.Failed
+					reduce.ByPlatform[platform] = Breakdown{passed, failed}
 				}
 
 				for priority, breakdown := range fullSet[category].ByPriority {
+					passed := breakdown.Passed
+					failed := breakdown.Failed
 					if _, ok := reduce.ByPriority[priority]; ok {
-						passed := reduce.ByPriority[priority].Passed + breakdown.Passed
-						failed := reduce.ByPriority[priority].Failed + breakdown.Failed
-						reduce.ByPriority[priority] = Breakdown{passed, failed}
-					} else {
-						reduce.ByPriority[priority] = Breakdown{breakdown.Passed, breakdown.Failed}
+						passed += reduce.ByPriority[priority].Passed
+						failed += reduce.ByPriority[priority].Failed
 					}
+					reduce.ByPriority[priority] = Breakdown{passed, failed}
 				}
-				reduce.AbsPassed += totalPassed
-				reduce.AbsFailed -= totalFailed
 				reduce.ByCategory[category] = Breakdown{totalPassed, totalFailed}
 			}
 		}
