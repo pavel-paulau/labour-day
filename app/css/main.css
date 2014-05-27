@@ -11,9 +11,25 @@
     width: 95%;
 }
 
-.sub-section {
-    height: 190px;
-    width: 31.6%;
+.sub-section-category {
+    height: 200px;
+    width: 38%;
+    position: absolute;
+}
+
+.sub-section-platform {
+    height: 200px;
+    width: 28.5%;
+    margin-left: 38%;
+    position: absolute;
+    border-left: 1px solid #eee;
+    border-right: 1px solid #eee;
+}
+
+.sub-section-priority {
+    height: 200px;
+    width: 28.5%;
+    margin-left: 66.5%;
     position: absolute;
 }
 

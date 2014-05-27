@@ -87,7 +87,7 @@ function Timeline($scope, $http) {
 			}];
 		});
 		$scope.numPlatforms = Object.keys($scope.byPlatform).length;
-		$scope.plaformWidth = screen.width * 0.95 / 3 /$scope.numPlatforms;
+		$scope.platformWidth = screen.width * 0.95 * 0.3 /$scope.numPlatforms;
 
 		/****************************** ByPriority ******************************/
 		data = $scope.timelineData[seq_id].ByPriority;
@@ -102,7 +102,7 @@ function Timeline($scope, $http) {
 			}];
 		});
 		$scope.numPriorities = Object.keys($scope.byPriority).length;
-		$scope.priorityWidth = screen.width * 0.95 / 3 / $scope.numPriorities;
+		$scope.priorityWidth = screen.width * 0.95 * 0.3 / $scope.numPriorities;
 
 		/****************************** ByCategory ******************************/
 		data = $scope.timelineData[seq_id].ByCategory;
@@ -117,7 +117,7 @@ function Timeline($scope, $http) {
 			}];
 		});
 		$scope.numCategories = Object.keys($scope.byCategory).length;
-		$scope.categoryWidth = screen.width * 0.95 / 3 / $scope.numCategories;
+		$scope.categoryWidth = screen.width * 0.95 * 0.4 / $scope.numCategories;
 
 		if(!$scope.$$phase) {
 			$scope.$apply();

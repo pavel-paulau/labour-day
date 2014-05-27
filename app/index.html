@@ -72,7 +72,7 @@
 
 		<div class="breakdowns">
 
-			<div id="by_category" class="sub-section" ng-if="byCategory">
+			<div id="by_category" class="sub-section-category" ng-if="byCategory">
 				<h5 class="masthead text-center">Build "{{build}}" - By Category</h5>
 				<div
 					class="chart text-center"
@@ -99,12 +99,12 @@
 				</div>
 			</div>
 
-			<div id="by_platform" class="sub-section" style="margin-left: 31.6%" ng-if="byPlatform">
+			<div id="by_platform" class="sub-section-platform" ng-if="byPlatform">
 				<h5 class="masthead text-center">Build "{{build}}" - By Platform</h5>
 				<div
 					class="chart text-center"
 					ng-repeat="(platform, data) in byPlatform"
-					style="margin-left: {{$index * plaformWidth}}; width: {{plaformWidth}}"
+					style="margin-left: {{$index * platformWidth}}; width: {{platformWidth}}"
 				>
 					<nvd3-pie-chart
 						data="data"
@@ -125,7 +125,7 @@
 				</div>
 			</div>
 
-			<div id="by_priority" class="sub-section" style="margin-left: 63.3%" ng-if="byPriority">
+			<div id="by_priority" class="sub-section-priority" ng-if="byPriority">
 				<h5 class="masthead text-center">Build "{{build}}" - By Priority</h5>
 				<div
 					class="chart text-center"
