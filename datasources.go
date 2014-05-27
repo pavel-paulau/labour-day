@@ -86,6 +86,29 @@ type ReduceBuild struct {
 	ByPriority map[string]Breakdown
 }
 
+type FullSet struct {
+	ByPlatform map[string]Breakdown
+	ByPriority map[string]Breakdown
+}
+
+func appendIfUnique(slice []string, s string) []string {
+	for i := range slice {
+		if slice[i] == s {
+			return slice
+		}
+	}
+	return append(slice, s)
+}
+
+func posInSlice(slice []string, s string) int {
+	for i := range slice {
+		if slice[i] == s {
+			return i
+		}
+	}
+	return -1
+}
+
 func (ds *DataSource) GetTimeline() []byte {
 	b := ds.GetBucket("jenkins")
 	params := map[string]interface{}{"startkey": ds.Release}
@@ -123,6 +146,10 @@ func (ds *DataSource) GetTimeline() []byte {
 	}
 	sort.Strings(versions)
 
+	full_set := map[string]FullSet{}
+
+	all_categories := []string{}
+
 	skip := len(versions) - TIMELINE_SIZE
 	reduce_builds := []ReduceBuild{}
 	for _, version := range versions[skip:] {
@@ -131,40 +158,96 @@ func (ds *DataSource) GetTimeline() []byte {
 		reduce_build.ByCategory = map[string]Breakdown{}
 		reduce_build.ByPlatform = map[string]Breakdown{}
 		reduce_build.ByPriority = map[string]Breakdown{}
+		this_categories := []string{}
 		for _, build := range map_builds[version] {
+			// Totals
 			reduce_build.AbsPassed += build.Passed
 			reduce_build.AbsFailed -= build.Failed
 
+			// By Category
 			if _, ok := reduce_build.ByCategory[build.Category]; ok {
-				passed := reduce_build.ByCategory[build.Category].Passed
-				passed += build.Passed
-				failed := reduce_build.ByCategory[build.Category].Failed
-				failed += build.Failed
+				passed := reduce_build.ByCategory[build.Category].Passed + build.Passed
+				failed := reduce_build.ByCategory[build.Category].Failed + build.Failed
 				reduce_build.ByCategory[build.Category] = Breakdown{passed, failed}
 			} else {
 				reduce_build.ByCategory[build.Category] = Breakdown{build.Passed, build.Failed}
 			}
+			all_categories = appendIfUnique(all_categories, build.Category)
 
+			// By Platform
 			if _, ok := reduce_build.ByPlatform[build.Platform]; ok {
-				passed := reduce_build.ByPlatform[build.Platform].Passed
-				passed += build.Passed
-				failed := reduce_build.ByPlatform[build.Platform].Failed
-				failed += build.Failed
+				passed := reduce_build.ByPlatform[build.Platform].Passed + build.Passed
+				failed := reduce_build.ByPlatform[build.Platform].Failed + build.Failed
 				reduce_build.ByPlatform[build.Platform] = Breakdown{passed, failed}
 			} else {
 				reduce_build.ByPlatform[build.Platform] = Breakdown{build.Passed, build.Failed}
 			}
 
+			// By Priority
 			if _, ok := reduce_build.ByPriority[build.Priority]; ok {
-				passed := reduce_build.ByPriority[build.Priority].Passed
-				passed += build.Passed
-				failed := reduce_build.ByPriority[build.Priority].Failed
-				failed += build.Failed
+				passed := reduce_build.ByPriority[build.Priority].Passed + build.Passed
+				failed := reduce_build.ByPriority[build.Priority].Failed + build.Failed
 				reduce_build.ByPriority[build.Priority] = Breakdown{passed, failed}
 			} else {
 				reduce_build.ByPriority[build.Priority] = Breakdown{build.Passed, build.Failed}
 			}
+
+			// Full Set
+			if posInSlice(this_categories, build.Category) == -1 {
+				by_platform := map[string]Breakdown{
+					build.Platform: Breakdown{build.Passed, build.Failed},
+				}
+				by_priority := map[string]Breakdown{
+					build.Priority: Breakdown{build.Passed, build.Failed},
+				}
+				full_set[build.Category] = FullSet{by_platform, by_priority}
+			} else {
+				// By Platform
+				passed := build.Passed + full_set[build.Category].ByPlatform[build.Platform].Passed
+				failed := build.Failed + full_set[build.Category].ByPlatform[build.Platform].Failed
+				full_set[build.Category].ByPlatform[build.Platform] = Breakdown{passed, failed}
+
+				// By Priority
+				passed = build.Passed + full_set[build.Category].ByPriority[build.Priority].Passed
+				failed = build.Failed + full_set[build.Category].ByPriority[build.Priority].Failed
+				full_set[build.Category].ByPriority[build.Priority] = Breakdown{passed, failed}
+			}
+
+			this_categories = appendIfUnique(this_categories, build.Category)
 		}
+
+		/***************** BACKFILL *****************/
+		for _, category := range all_categories {
+			total_passed := float64(0)
+			total_failed := float64(0)
+			if _, ok := reduce_build.ByCategory[category]; !ok {
+				for platform, breakdown := range full_set[category].ByPlatform {
+					if _, ok := reduce_build.ByPlatform[platform]; ok {
+						passed := reduce_build.ByPlatform[platform].Passed + breakdown.Passed
+						failed := reduce_build.ByPlatform[platform].Failed + breakdown.Failed
+						reduce_build.ByPlatform[platform] = Breakdown{passed, failed}
+					} else {
+						reduce_build.ByPlatform[platform] = Breakdown{breakdown.Passed, breakdown.Failed}
+					}
+					total_passed += breakdown.Passed
+					total_failed += breakdown.Failed
+				}
+
+				for priority, breakdown := range full_set[category].ByPriority {
+					if _, ok := reduce_build.ByPriority[priority]; ok {
+						passed := reduce_build.ByPriority[priority].Passed + breakdown.Passed
+						failed := reduce_build.ByPriority[priority].Failed + breakdown.Failed
+						reduce_build.ByPriority[priority] = Breakdown{passed, failed}
+					} else {
+						reduce_build.ByPriority[priority] = Breakdown{breakdown.Passed, breakdown.Failed}
+					}
+				}
+				reduce_build.AbsPassed += total_passed
+				reduce_build.AbsFailed -= total_failed
+				reduce_build.ByCategory[category] = Breakdown{total_passed, total_failed}
+			}
+		}
+
 		total := reduce_build.AbsPassed - reduce_build.AbsFailed
 		reduce_build.RelPassed = 100.0 * reduce_build.AbsPassed / total
 		reduce_build.RelFailed = -100.0 * reduce_build.AbsFailed / total
