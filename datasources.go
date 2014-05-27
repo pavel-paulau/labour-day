@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"sort"
-	"strings"
 
 	"github.com/couchbaselabs/go-couchbase"
 )
@@ -53,144 +52,125 @@ func (ds *DataSource) installDDoc(ddoc string) {
 	}
 }
 
-var TIMELINE_SIZE = 30
+var TIMELINE_SIZE = 40
 
-func (ds *DataSource) GetTimeline(abs bool) []byte {
-	b := ds.GetBucket("jenkins")
-	params := map[string]interface{}{"startkey": ds.Release}
-	rows := ds.QueryView(b, "jenkins", "data_by_build", params)
-
-	failed := map[string]float64{}
-	total := map[string]float64{}
-	builds := []string{}
-	for _, row := range rows {
-		build := row.Key.(string)
-		failCount, ok := row.Value.([]interface{})[0].(float64)
-		if !ok {
-			continue
-		}
-		totalCount, ok := row.Value.([]interface{})[1].(float64)
-		if !ok {
-			continue
-		}
-		if _, ok := failed[build]; ok {
-			failed[build] += failCount
-		} else {
-			failed[build] = failCount
-		}
-		if _, ok := total[build]; ok {
-			total[build] += totalCount
-		} else {
-			total[build] = totalCount
-		}
-		builds = appendIfUnique(builds, build)
-	}
-
-	timeline := []map[string]interface{}{}
-	passedValues := []interface{}{}
-	failedValues := []interface{}{}
-	skip := len(builds) - TIMELINE_SIZE
-	sort.Strings(builds)
-	if abs {
-		for _, build := range builds[skip:] {
-			passedValues = append(passedValues, []interface{}{
-				build,
-				total[build] - failed[build],
-			})
-			failedValues = append(failedValues, []interface{}{
-				build,
-				-failed[build],
-			})
-		}
-		timeline = append(timeline,
-			map[string]interface{}{"key": "Passed", "values": passedValues})
-		timeline = append(timeline,
-			map[string]interface{}{"key": "Failed", "values": failedValues})
-	} else {
-		for _, build := range builds[skip:] {
-			passedValues = append(passedValues, []interface{}{
-				build,
-				100.0 * (total[build] - failed[build]) / total[build],
-			})
-			failedValues = append(failedValues, []interface{}{
-				build,
-				100.0 * failed[build] / total[build],
-			})
-		}
-		timeline = append(timeline,
-			map[string]interface{}{"key": "Passed, %", "values": passedValues})
-		timeline = append(timeline,
-			map[string]interface{}{"key": "Failed, %", "values": failedValues})
-	}
-
-	j, _ := json.Marshal(timeline)
-	return j
-}
-
-func appendIfUnique(slice []string, s string) []string {
-	for i := range slice {
-		if slice[i] == s {
-			return slice
-		}
-	}
-	return append(slice, s)
-}
-
-var BREAKDOWN_ID = map[string]int{
+var VIEW = map[string]int{
+	"fail_count":  0,
+	"total_count": 1,
 	"by_platform": 2,
 	"by_priority": 3,
 	"by_category": 4,
 }
 
-func (ds *DataSource) GetBreakdown(build string, breakdown string) []byte {
+type MapBuild struct {
+	Passed   float64
+	Failed   float64
+	Category string
+	Platform string
+	Priority string
+}
+
+type Breakdown struct {
+	Passed float64
+	Failed float64
+}
+
+type ReduceBuild struct {
+	Version    string
+	AbsPassed  float64
+	AbsFailed  float64
+	RelPassed  float64
+	RelFailed  float64
+	ByCategory map[string]Breakdown
+	ByPlatform map[string]Breakdown
+	ByPriority map[string]Breakdown
+}
+
+func (ds *DataSource) GetTimeline() []byte {
 	b := ds.GetBucket("jenkins")
-	params := map[string]interface{}{"key": build}
+	params := map[string]interface{}{"startkey": ds.Release}
 	rows := ds.QueryView(b, "jenkins", "data_by_build", params)
-	breakdown_id := BREAKDOWN_ID[breakdown]
 
-	keys := []string{}
-	failed := map[string]float64{}
-	total := map[string]float64{}
+	/***************** MAP *****************/
+	map_builds := map[string][]MapBuild{}
 	for _, row := range rows {
-		var key string
-		key = row.Value.([]interface{})[breakdown_id].(string)
-
-		failCount, ok := row.Value.([]interface{})[0].(float64)
+		version := row.Key.(string)
+		failed, ok := row.Value.([]interface{})[VIEW["fail_count"]].(float64)
 		if !ok {
 			continue
 		}
-		totalCount, ok := row.Value.([]interface{})[1].(float64)
+		total, ok := row.Value.([]interface{})[VIEW["total_count"]].(float64)
 		if !ok {
 			continue
 		}
-		if _, ok := failed[key]; ok {
-			failed[key] += failCount
-		} else {
-			failed[key] = failCount
-		}
-		if _, ok := total[key]; ok {
-			total[key] += totalCount
-		} else {
-			total[key] = totalCount
-		}
-		keys = appendIfUnique(keys, key)
+		category := row.Value.([]interface{})[VIEW["by_category"]].(string)
+		platform := row.Value.([]interface{})[VIEW["by_platform"]].(string)
+		priority := row.Value.([]interface{})[VIEW["by_priority"]].(string)
+
+		map_builds[version] = append(map_builds[version], MapBuild{
+			total - failed,
+			failed,
+			category,
+			platform,
+			priority,
+		})
 	}
 
-	sort.Strings(keys)
-	data := map[string]interface{}{}
-	for _, key := range keys {
-		var title string
-		if breakdown == "by_category" {
-			title = key
-		} else {
-			title = strings.Title(strings.ToLower(key))
+	/***************** REDUCE *****************/
+	versions := []string{}
+	for version, _ := range map_builds {
+		versions = append(versions, version)
+	}
+	sort.Strings(versions)
+
+	skip := len(versions) - TIMELINE_SIZE
+	reduce_builds := []ReduceBuild{}
+	for _, version := range versions[skip:] {
+		reduce_build := ReduceBuild{}
+		reduce_build.Version = version
+		reduce_build.ByCategory = map[string]Breakdown{}
+		reduce_build.ByPlatform = map[string]Breakdown{}
+		reduce_build.ByPriority = map[string]Breakdown{}
+		for _, build := range map_builds[version] {
+			reduce_build.AbsPassed += build.Passed
+			reduce_build.AbsFailed -= build.Failed
+
+			if _, ok := reduce_build.ByCategory[build.Category]; ok {
+				passed := reduce_build.ByCategory[build.Category].Passed
+				passed += build.Passed
+				failed := reduce_build.ByCategory[build.Category].Failed
+				failed += build.Failed
+				reduce_build.ByCategory[build.Category] = Breakdown{passed, failed}
+			} else {
+				reduce_build.ByCategory[build.Category] = Breakdown{build.Passed, build.Failed}
+			}
+
+			if _, ok := reduce_build.ByPlatform[build.Platform]; ok {
+				passed := reduce_build.ByPlatform[build.Platform].Passed
+				passed += build.Passed
+				failed := reduce_build.ByPlatform[build.Platform].Failed
+				failed += build.Failed
+				reduce_build.ByPlatform[build.Platform] = Breakdown{passed, failed}
+			} else {
+				reduce_build.ByPlatform[build.Platform] = Breakdown{build.Passed, build.Failed}
+			}
+
+			if _, ok := reduce_build.ByPriority[build.Priority]; ok {
+				passed := reduce_build.ByPriority[build.Priority].Passed
+				passed += build.Passed
+				failed := reduce_build.ByPriority[build.Priority].Failed
+				failed += build.Failed
+				reduce_build.ByPriority[build.Priority] = Breakdown{passed, failed}
+			} else {
+				reduce_build.ByPriority[build.Priority] = Breakdown{build.Passed, build.Failed}
+			}
 		}
-		data[title] = []map[string]interface{}{
-			{"key": "Passed", "value": total[key] - failed[key]},
-			{"key": "Failed", "value": failed[key]},
-		}
+		total := reduce_build.AbsPassed - reduce_build.AbsFailed
+		reduce_build.RelPassed = 100.0 * reduce_build.AbsPassed / total
+		reduce_build.RelFailed = -100.0 * reduce_build.AbsFailed / total
+		reduce_builds = append(reduce_builds, reduce_build)
 	}
 
-	j, _ := json.Marshal(data)
+	j, _ := json.Marshal(reduce_builds)
 	return j
 }

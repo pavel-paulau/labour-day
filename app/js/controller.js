@@ -8,15 +8,40 @@
 function Timeline($scope, $http) {
 	"use strict";
 
-	$http.get('/rel_timeline').success(function(data) {
-		$scope.timelineRelData = data;
-		var latest_build = data[0]["values"][data[0]["values"].length - 1][0];
-		updateBreakDown(latest_build);
+	$http.get('/timeline').success(function(data) {
+		$scope.timelineData = data;
+		$scope.timelineRelData = [{
+			"key": "Passed, %",
+			"values": []
+		}, {
+			"key": "Failed, %",
+			"values": []
+		}];
+
+		$scope.timelineAbsData = [{
+			"key": "Passed",
+			"values": []
+		}, {
+			"key": "Failed",
+			"values": []
+		}];
+
+		data.forEach(function(build) {
+			$scope.timelineRelData[0].values.push([build.Version, build.RelPassed]);
+			$scope.timelineRelData[1].values.push([build.Version, build.RelFailed]);
+			$scope.timelineAbsData[0].values.push([build.Version, build.AbsPassed]);
+			$scope.timelineAbsData[1].values.push([build.Version, build.AbsFailed]);
+		});
+
+		updateBreakDown(data.length - 1);
 	});
 
-	$http.get('/abs_timeline').success(function(data) {
-		$scope.timelineAbsData = data;
-	});
+	var format = d3.format('f');
+	$scope.yAxisTickFormatFunction = function(){
+		return function(d) {
+			return format(Math.abs(d));
+		};
+	};
 
 	$scope.relToolTipContentFunction = function() {
 		return function(key, build, num) {
@@ -26,70 +51,77 @@ function Timeline($scope, $http) {
 	};
 
 	$scope.absToolTipContentFunction = function() {
-		return function(key, build, num) {
-			var failed = $scope.timelineAbsData[1].values;
-			var passed = $scope.timelineAbsData[0].values;
-			for (var i = 0; i < failed.length; i++) {
-				if (passed[i][0] == build) {
-					var total;
-					if (key === 'Passed') {
-						total = -1 * failed[i][1] + parseInt(num, 10);	
-					} else {
-						total = passed[i][1] + parseInt(num, 10);	
-					}					
-					return '<h4>' + num + ' of ' + total + ' Tests ' + key + '</h4>' +
-						'<p>Build ' + build + '</p>';
-				}
-			}
-		};
-	};
-
-	var format = d3.format('f');
-	$scope.yAxisTickFormatFunction = function(){
-		return function(d) {
-			return format(Math.abs(d));
+		return function(key, build, num, data) {
+			var total = $scope.timelineData[data.pointIndex].AbsPassed -
+				$scope.timelineData[data.pointIndex].AbsFailed;
+			return '<h4>' + num + ' of ' + total + ' Tests ' + key + '</h4>' +
+				'<p>Build ' + build + '</p>';
 		};
 	};
 
 	$scope.$on('barClick', function(event, data) {
-		var build = data.point[0];
-		updateBreakDown(build);
+		updateBreakDown(data.pointIndex);
 	});
 
 	$scope.xFunction = function(){
-		return function(d) { return d.key; };
+		return function(d){ return d.key; };
 	};
 
 	$scope.yFunction = function(){
 		return function(d){ return d.value; };
 	};
 
-	var updateBreakDown = function(build) {
-		$scope.build = build;
+	var updateBreakDown = function(seq_id) {
+		$scope.build = $scope.timelineData[seq_id].Version;
 
-		$http({method: 'GET', url: '/by_platform', params: {"build": build}})
-		.success(function(data) {
-			$scope.byPlatform = data;
-			$scope.numPlatforms = Object.keys($scope.byPlatform).length;
-			$scope.plaformWidth = screen.width * 0.95 / 3 /$scope.numPlatforms;
-
-			$http({method: 'GET', url: '/by_priority', params: {"build": build}})
-			.success(function(data) {
-				$scope.byPriority = data;
-				$scope.numPriorities = Object.keys($scope.byPriority).length;
-				$scope.priorityWidth = screen.width * 0.95 / 3 / $scope.numPriorities;
-
-				$http({method: 'GET', url: '/by_category', params: {"build": build}})
-				.success(function(data) {
-					$scope.byCategory = data;
-					$scope.numCategories = Object.keys($scope.byCategory).length;
-					$scope.categoryWidth = screen.width * 0.95 / 3 / $scope.numCategories;
-
-					$scope.$apply();
-				});
-
-			});
+		/****************************** ByPlatform ******************************/
+		var data = $scope.timelineData[seq_id].ByPlatform;
+		$scope.byPlatform = {};
+		Object.keys(data).forEach(function(breakdown) {
+			$scope.byPlatform[breakdown] = [{
+				"key": "Passed",
+				"value": data[breakdown].Passed
+			}, {
+				"key": "Failed",
+				"value": data[breakdown].Failed
+			}];
 		});
+		$scope.numPlatforms = Object.keys($scope.byPlatform).length;
+		$scope.plaformWidth = screen.width * 0.95 / 3 /$scope.numPlatforms;
+
+		/****************************** ByPriority ******************************/
+		data = $scope.timelineData[seq_id].ByPriority;
+		$scope.byPriority = {};
+		Object.keys(data).forEach(function(breakdown) {
+			$scope.byPriority[breakdown] = [{
+				"key": "Passed",
+				"value": data[breakdown].Passed
+			}, {
+				"key": "Failed",
+				"value": data[breakdown].Failed
+			}];
+		});
+		$scope.numPriorities = Object.keys($scope.byPriority).length;
+		$scope.priorityWidth = screen.width * 0.95 / 3 / $scope.numPriorities;
+
+		/****************************** ByCategory ******************************/
+		data = $scope.timelineData[seq_id].ByCategory;
+		$scope.byCategory = {};
+		Object.keys(data).forEach(function(breakdown) {
+			$scope.byCategory[breakdown] = [{
+				"key": "Passed",
+				"value": data[breakdown].Passed
+			}, {
+				"key": "Failed",
+				"value": data[breakdown].Failed
+			}];
+		});
+		$scope.numCategories = Object.keys($scope.byCategory).length;
+		$scope.categoryWidth = screen.width * 0.95 / 3 / $scope.numCategories;
+
+		if(!$scope.$$phase) {
+			$scope.$apply();
+		}
 	};
 
 	$scope.breakdownToolTipContentFunction = function() {

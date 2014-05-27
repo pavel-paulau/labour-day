@@ -24,9 +24,9 @@
 			<div>
 				<div class="timeline">
 					<nvd3-multi-bar-chart
+						id="relTimeline"
 						data="timelineRelData"
-						id="timelineBars"
-						margin="{left: 25, top: 0, bottom: 35, right: 0}"
+						margin="{left: 40, top: 0, bottom: 35, right: 20}"
 						stacked="true"
 						showLegend="true"
 						showXAxis="true"
@@ -49,9 +49,9 @@
 			<div>
 				<div class="timeline">
 					<nvd3-multi-bar-chart
+						id="absTimeline"
 						data="timelineAbsData"
-						id="timelineBarsRelative"
-						margin="{left: 25, top: 0, bottom: 35, right: 0}"
+						margin="{left: 40, top: 0, bottom: 35, right: 20}"
 						stacked="true"
 						showLegend="true"
 						showXAxis="true"
@@ -72,7 +72,7 @@
 
 		<div class="breakdowns">
 
-			<div id="by_category" class="sub-section" ng-if="byPriority">
+			<div id="by_category" class="sub-section" ng-if="byCategory">
 				<h5 class="masthead text-center">Build "{{build}}" - By Category</h5>
 				<div
 					class="chart text-center"
