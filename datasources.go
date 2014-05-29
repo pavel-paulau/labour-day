@@ -226,8 +226,8 @@ func (ds *DataSource) GetTimeline() []byte {
 			totalFailed := float64(0)
 			if _, ok := reduce.ByCategory[category]; !ok {
 				for platform, breakdown := range fullSet[category].ByPlatform {
-					reduce.AbsPassed += breakdown.Passed
-					reduce.AbsFailed += breakdown.Failed
+					totalPassed += breakdown.Passed
+					totalFailed += breakdown.Failed
 
 					passed := breakdown.Passed
 					failed := breakdown.Failed
@@ -248,6 +248,9 @@ func (ds *DataSource) GetTimeline() []byte {
 					}
 					reduce.ByPriority[priority] = Breakdown{passed, failed}
 				}
+
+				reduce.AbsPassed += totalPassed
+				reduce.AbsFailed -= totalFailed
 				reduce.ByCategory[category] = Breakdown{totalPassed, totalFailed}
 			}
 		}
